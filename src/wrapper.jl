@@ -14,7 +14,7 @@ let
     end
 end
 
-const c"size_t" = Csize_t
+const c"size_t"  = Csize_t
 const c"FILE"    = Cvoid
 const c"va_list" = Cvoid
 

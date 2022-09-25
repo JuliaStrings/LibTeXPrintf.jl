@@ -3,23 +3,26 @@ module LibTeXPrintf
 using Base: ImmutableDict
 using Printf: Format, argmismatch
 using LaTeXStrings
-using Suppressor
 
 include("wrapper.jl")
 using .libtexprintf
+
+include("capture.jl")
 
 
 export stexprintf, texprintf, texsymbols, texfonts, texsetfont, texgetfont
 
 function __init__()
     # this is a workaround so `stdout` can work correctly and be captured by Suppressor
-    libtexprintf.texprintf("")
+    # libtexprintf.texprintf("")
     TEXSYMBOLS[] = ImmutableDict([
         if length(line) == 4
             String(line[2] * line[3]) => String(line[4])
         else
             String(line[2]) => String(line[3])
-        end for line in split.(split(rstrip(@capture_out libtexprintf.texlistsymbols(), '\n'), '\n'))
+        end for line in split.(split(strip(capture_out() do
+                    libtexprintf.texlistsymbols()
+                end, '\n'), '\n'))
     ]...)
 end
 
@@ -172,7 +175,7 @@ julia> LibTeXPrintf.texerrors() # queue cleaned
 ```
 """
 function texerrors()
-    error = @capture_err begin
+    error = capture_err() do
         libtexprintf.texerrors()
     end
     if iszero(length(error))
@@ -318,7 +321,9 @@ function texprintf(io::IO, format::String, args...)
     else
         length(args) == 0 || argmismatch(0, length(args))
     end
-    out = @capture_out libtexprintf.texprintf(format, args...)
+    out = capture_out() do
+        libtexprintf.texprintf(format, args...)
+    end
     if !iszero(libtexprintf.TEXPRINTF_ERR[])
         error = texerrors()
         throw(ArgumentError(error))
