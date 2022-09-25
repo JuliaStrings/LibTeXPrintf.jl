@@ -7,7 +7,11 @@ let
     incdir = joinpath(LibTeXPrintf_jll.artifact_dir, "include")
     libdir = dirname(LibTeXPrintf_jll.libtexprintf_path)
 
-    c`-std=c99 -I$(incdir) -L$(libdir) -ltexprintf`
+    if Sys.iswindows()
+        c`-std=c99 -I$(incdir) -L$(libdir) -ltexprintf-1`
+    else
+        c`-std=c99 -I$(incdir) -L$(libdir) -ltexprintf`
+    end
 end
 
 const c"size_t" = Csize_t
