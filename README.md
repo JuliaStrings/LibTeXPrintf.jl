@@ -8,7 +8,7 @@ Wrapper of the library
 [bartp5/libtexprintf](https://github.com/bartp5/libtexprintf) for
 printing rendered LaTeX code in the terminal.
 
-Given that libtexprintf is licensed under the GPL-3.0 and this library link
+Given that libtexprintf is licensed under the GPL-3.0 and this library links
 dynamically with it, the full work must be GPL-3.0. The LICENCE was changed to
 make clear that using this library implies using GPLed code.
 
