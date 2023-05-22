@@ -118,12 +118,11 @@ ArgumentError("\"not_a_font\" not in (\"mathsfbfit\", \"mathsfbf\", \"mathfrak\"
 ```
 """
 function texsetfont(font::String)
-    if font ∉ texfonts()
+    idx = findfirst(==(font), TEXFONTS)
+    if isnothing(idx)
         throw(ArgumentError("\"$font\" not in $(texfonts())"))
     end
-    GC.@preserve font begin
-        libtexprintf.TEXPRINTF_FONT[] = pointer(font)
-    end
+    libtexprintf.TEXPRINTF_FONT[] = pointer(TEXFONTS[idx])
     return font
 end
 
