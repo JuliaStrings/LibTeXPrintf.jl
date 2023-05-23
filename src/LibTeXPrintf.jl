@@ -73,7 +73,20 @@ See also [`texsetfont`](@ref), [`texgetfont`](@ref).
 # Examples
 ```jldoctest
 julia> texfonts()
-("mathsfbfit", "mathsfbf", "mathfrak", "mathbfit", "mathsfit", "mathcal", "mathscr", "mathbf", "mathbb", "mathsf", "mathtt", "mathnormal", "text")
+13-element Vector{String}:
+ "mathbb"
+ "mathbf"
+ "mathbfit"
+ "mathcal"
+ "mathfrak"
+ "mathnormal"
+ "mathscr"
+ "mathsf"
+ "mathsfbf"
+ "mathsfbfit"
+ "mathsfit"
+ "mathtt"
+ "text"
 ```
 """
 texfonts() = TEXFONTS
@@ -123,7 +136,7 @@ function texsetfont(font::String)
     if isempty(idx)
         throw(ArgumentError("\"$font\" not in $(TEXFONTS)"))
     end
-    libtexprintf.TEXPRINTF_FONT[] = pointer(TEXFONTS, first(idx))
+    libtexprintf.TEXPRINTF_FONT[] = pointer(TEXFONTS[first(idx)])
     return font
 end
 

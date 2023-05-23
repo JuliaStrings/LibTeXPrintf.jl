@@ -8,7 +8,7 @@ import LibTeXPrintf: texerrors, libtexprintf
 @testset "LibTeXPrintf.jl" begin
     @test texerrors() == ""
     @test texfonts() ==
-    (
+    sort!([
         "mathsfbfit",
         "mathsfbf",
         "mathfrak",
@@ -22,7 +22,7 @@ import LibTeXPrintf: texerrors, libtexprintf
         "mathtt",
         "mathnormal",
         "text"
-    )
+    ])
     @test texgetfont() == "text"
 
     @test texsetfont("mathbb") == "mathbb"
