@@ -58,5 +58,5 @@ import LibTeXPrintf: texerrors, libtexprintf
     #                                                                                  #
     ####################################################################################
 
-
+     @test_broken stexprint("\\frac{1}{%%d}") == "1\n──\n%d" # "1\n──\n0"
 end
