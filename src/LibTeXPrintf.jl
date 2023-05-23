@@ -45,8 +45,8 @@ texsymbols() = TEXSYMBOLS[]
 
 Dictionary with all the symbols that the library supports.
 """
-const TEXFONTS =
-    (
+const TEXFONTS = sort!(
+    [
         "mathsfbfit",
         "mathsfbf",
         "mathfrak",
@@ -59,8 +59,9 @@ const TEXFONTS =
         "mathsf",
         "mathtt",
         "mathnormal",
-        "text"
-    )
+        "text",
+    ]
+)
 
 """
     texfonts()
@@ -118,11 +119,11 @@ ArgumentError("\"not_a_font\" not in (\"mathsfbfit\", \"mathsfbf\", \"mathfrak\"
 ```
 """
 function texsetfont(font::String)
-    idx = findfirst(==(font), TEXFONTS)
-    if isnothing(idx)
-        throw(ArgumentError("\"$font\" not in $(texfonts())"))
+    idx = searchsorted(TEXFONTS, font)
+    if isempty(idx)
+        throw(ArgumentError("\"$font\" not in $(TEXFONTS)"))
     end
-    libtexprintf.TEXPRINTF_FONT[] = pointer(TEXFONTS[idx])
+    libtexprintf.TEXPRINTF_FONT[] = pointer(TEXFONTS[first(idx)])
     return font
 end
 
