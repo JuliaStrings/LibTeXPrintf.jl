@@ -123,7 +123,7 @@ function texsetfont(font::String)
     if isempty(idx)
         throw(ArgumentError("\"$font\" not in $(TEXFONTS)"))
     end
-    libtexprintf.TEXPRINTF_FONT[] = pointer(TEXFONTS[first(idx)])
+    libtexprintf.TEXPRINTF_FONT[] = pointer(TEXFONTS, first(idx))
     return font
 end
 
