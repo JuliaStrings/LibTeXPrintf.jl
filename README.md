@@ -23,7 +23,7 @@ julia> Pkg.add("LibTeXPrintf")
 
 # Documentation
 
-LibTeXPrintf.jl export six three functions
+LibTeXPrintf.jl export eight functions
 
 ```julia
 texfonts()::Vector{String}
@@ -31,6 +31,9 @@ texgetfont()::String
 texsetfont!(font::String)::String # modifies global state, doesn't modify its argument
 
 texsymbols()::ImmutableDict{String, String}
+
+texprintf(format::String, args...; [lw])::String
+texprintf(format::LaTeXString, args...; [lw])::String
 
 stexprintf(format::String, args...; [lw])::String
 stexprintf(format::LaTeXString, args...; [lw])::String
@@ -65,26 +68,23 @@ julia> using LibTeXPrintf
 
 julia> using LaTeXStrings
 
-julia> println(stexprintf("\\frac{1}{%d}", 2))
-1
-─
-2
+julia> stexprintf("\\frac{1}{%d}", 2)
+"1\n─\n2"
 
-julia> println(stexprintf("\\sum_{i=0}^{10}{%c}^2", 'i'))
+julia> texprintf("\\sum_{i=0}^{10}{%c}^2", 'i')
 10
 ⎯⎯
 ╲   2
 ╱  i
 ⎺⎺
 i=0
-
 julia> texgetfont()
 "text"
 
 julia> texsetfont!("mathbb")
 "mathbb"
 
-julia> println(stexprintf("This is a LaTeX string."))
+julia> texprintf("This is a LaTeX string.")
 𝕋𝕙𝕚𝕤 𝕚𝕤 𝕒 𝕃𝕒𝕋𝕖𝕏 𝕤𝕥𝕣𝕚𝕟𝕘.
 
 julia> texsetfont!("text")

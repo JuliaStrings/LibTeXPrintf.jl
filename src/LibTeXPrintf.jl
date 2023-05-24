@@ -10,7 +10,7 @@ using .libtexprintf
 include("capture.jl")
 
 
-export stexprintf, texsymbols, texfonts, texsetfont!, texgetfont, texsetascii, texsetunicode
+export stexprintf, texprintf, texsymbols, texfonts, texsetfont!, texgetfont, texsetascii, texsetunicode
 
 function __init__()
     texsetfont!("text")
@@ -208,7 +208,7 @@ end
     stexprintf(format::LaTeXString, args...; [lw=0])
 
 Write in a string rendered LaTeX from `format`, and format `args` values using the same
-format specifiers as macro `@printf` (or the `printf` function of the language C). The
+format specifiers as macro `@printf` (or the `printf` function from the C language). The
 keywork `lw` determines the linewidth used to render the text boxes, a linewidth of 0 means
 no linewidth limit.
 
@@ -260,7 +260,51 @@ stexprintf(fmt::String, args...; lw=0, #= debug =# fail=true) = stexprint(format
 stexprintf(fmt::LaTeXString, args...; lw=0, #= debug =# fail=true) = stexprint(format(Format(fmt.s), args...); lw, fail)
 
 @doc raw"""
-   stexprint(str::String; [lw=0])
+    texprintf([io=stdout], fmt::String, args...; [lw=displaysize(io)[2]])
+    texprintf([io=stdout], fmt::LaTeXString, args...; [lw=displaysize(io)[2]])
+
+Write to `io` rendered LaTeX from `format`, and format `args` values using the same
+format specifiers as macro `@printf` (or the `printf` function from the C language). The
+keywork `lw` determines the linewidth used to render the text boxes, a linewidth of 0 means
+no linewidth limit.
+
+If `format isa LaTeXString`, then it only is passed as `format.s`.
+
+!!! note
+    Newline character is not supported by libtexprintf. You can insert a line jump with
+    `\\`, as in LaTeX. If you use `'\n'`, it will not work or errors will appear.
+
+# Examples
+```jldoctest
+julia> texprintf("\\frac{1}{%d}", 2)
+1
+─
+2
+
+julia> texprintf("\\sum_{i=0}^{10}{%c}^2", 'i')
+10
+⎯⎯
+╲   2
+╱  i
+⎺⎺
+i=0
+
+julia> using LaTeXStrings
+
+julia> texprintf(L"\sum_{i=0}^{10}{%c}^2", 'i')
+ 10
+ ⎯⎯
+ ╲   2
+$╱  i $
+ ⎺⎺
+ i=0
+```
+"""
+texprintf(fmt, args...; lw=-1) = print(stdout, stexprintf(fmt, args...; lw=(lw < 0 ? displaysize(stdout)[2] : lw)))
+texprintf(io::IO, fmt, args...; lw=-1) = print(io, stexprintf(fmt, args...; lw=(lw < 0 ? displaysize(io)[2] : lw)))
+
+@doc raw"""
+   stexprint(str::String; [lw=0], [fail=true], [escape=true])
 
 Write in a string rendered LaTeX from `str`. The keywork `lw` determines the linewidth used
 to render the text boxes, a linewidth of 0 means no linewidth limit.
@@ -280,24 +324,6 @@ julia> println(out)
 1
 ─
 2
-
-julia> out = stexprint("\\sum_{i=0}^{10}{%c}^2", 'i')
-"10\n⎯⎯\n╲   2\n╱  i\n⎺⎺\ni=0"
-
-julia> println(out)
-10
-⎯⎯
-╲   2
-╱  i
-⎺⎺
-i=0
-
-julia> println(stexprint("tiny cute box for me"; lw=5))
-tiny
-cute
-box
-for
-me
 
 julia> println(stexprint("tiny cute box for me"; lw=10))
 tiny cute
