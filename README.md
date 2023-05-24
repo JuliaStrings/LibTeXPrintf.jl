@@ -28,7 +28,7 @@ LibTeXPrintf.jl export six three functions
 ```julia
 texfonts()::Vector{String}
 texgetfont()::String
-texsetfont!(font::String)::String
+texsetfont!(font::String)::String # modifies global state, doesn't modify its argument
 
 texsymbols()::ImmutableDict{String, String}
 

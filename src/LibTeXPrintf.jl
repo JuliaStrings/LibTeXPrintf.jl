@@ -204,8 +204,8 @@ end
 
 
 @doc raw"""
-    stexprintf(format::String, args...; [lw=displaysize(stdout)[2]])
-    stexprintf(format::LaTeXString, args...; [lw=displaysize(stdout)[2]])
+    stexprintf(format::String, args...; [lw=0])
+    stexprintf(format::LaTeXString, args...; [lw=0])
 
 Write in a string rendered LaTeX from `format`, and format `args` values using the same
 format specifiers as macro `@printf` (or the `printf` function of the language C). The
@@ -217,8 +217,8 @@ If `format isa LaTeXString`, then it only is passed as `format.s`.
 Returns a `String` that when displayed shows as rendered LaTeX.
 
 !!! note
-    Newline character is not supported by libtexprintf. If you use it, it will not work or
-    errors will appear.
+    Newline character is not supported by libtexprintf. You can insert a line jump with
+    `\\`, as in LaTeX. If you use `'\n'`, it will not work or errors will appear.
 
 # Examples
 ```jldoctest
@@ -256,19 +256,72 @@ $╱  i $
 
 ```
 """
-function stexprintf(fmt::String, args...; lw=displaysize(stdout)[2])
-    str = format(Format(fmt), args...)
-    escstr = replace(str, r"%" => "%%")
-    texsetlw!(lw)
-    cstr = libtexprintf.stexprintf(escstr)
+stexprintf(fmt::String, args...; lw=0, #= debug =# fail=true) = stexprint(format(Format(fmt), args...); lw, fail)
+stexprintf(fmt::LaTeXString, args...; lw=0, #= debug =# fail=true) = stexprint(format(Format(fmt.s), args...); lw, fail)
+
+@doc raw"""
+   stexprint(str::String; [lw=0])
+
+Write in a string rendered LaTeX from `str`. The keywork `lw` determines the linewidth used
+to render the text boxes, a linewidth of 0 means no linewidth limit.
+
+Returns a `String` that when displayed shows as rendered LaTeX.
+
+!!! note
+    Newline character is not supported by libtexprintf. You can insert a line jump with
+    `\\`, as in LaTeX. If you use `'\n'`, it will not work or errors will appear.
+
+# Examples
+```jldoctest
+julia> out = stexprint("\\frac{1}{%d}", 2)
+"1\n─\n2"
+
+julia> println(out)
+1
+─
+2
+
+julia> out = stexprint("\\sum_{i=0}^{10}{%c}^2", 'i')
+"10\n⎯⎯\n╲   2\n╱  i\n⎺⎺\ni=0"
+
+julia> println(out)
+10
+⎯⎯
+╲   2
+╱  i
+⎺⎺
+i=0
+
+julia> println(stexprint("tiny cute box for me"; lw=5))
+tiny
+cute
+box
+for
+me
+
+julia> println(stexprint("tiny cute box for me"; lw=10))
+tiny cute
+box for me
+```
+"""
+function stexprint(tex::String; lw=0, #= debug =# fail=true, escape=true)
+    esctex = escape ? replace(tex, '%' => "{\\%%}") : tex # escape '%' for C-printf style format and latex
+    texsetlw!(lw) # set the linewidth for rendering
+    c_str = libtexprintf.stexprintf(esctex) # can be C_NULL
+    if c_str == C_NULL
+        throw(ArgumentError("Returned Cstring pointer is C_NULL"))
+    end
+    render = unsafe_string(c_str)
+    libtexprintf.texfree(c_str)
     if !iszero(libtexprintf.TEXPRINTF_ERR[])
         error = texerrors()
-        throw(ArgumentError(error))
+        if fail
+            throw(ArgumentError(error))
+        else
+            @error ArgumentError(error)
+        end
     end
-    out = unsafe_string(cstr)
-    libtexprintf.texfree(cstr)
-    out
+    render
 end
-stexprintf(format::LaTeXString, args...; lw=displaysize(stdout)[2]) = stexprintf(format.s, args...; lw)
 
 end
