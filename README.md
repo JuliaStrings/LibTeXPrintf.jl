@@ -23,7 +23,7 @@ julia> Pkg.add("LibTeXPrintf")
 
 # Documentation
 
-LibTeXPrintf.jl export eight functions
+LibTeXPrintf.jl export nine functions
 
 ```julia
 texfonts()::Vector{String}
@@ -32,11 +32,10 @@ texsetfont!(font::String)::String # modifies global state, doesn't modify its ar
 
 texsymbols()::ImmutableDict{String, String}
 
-texprintf(format::String, args...; [lw])::String
-texprintf(format::LaTeXString, args...; [lw])::String
+texstring(tex::String; [lw])::String
 
-stexprintf(format::String, args...; [lw])::String
-stexprintf(format::LaTeXString, args...; [lw])::String
+texprint(tex::String; [lw])::String
+texprintln(tex::String; [lw])::String
 
 texsetascii()
 texsetunicode()
@@ -44,18 +43,6 @@ texsetunicode()
 
 The documentation of every one of these can be consulted in help mode in the
 REPL (press `?` to change to help mode, `backspace` to exit).
-
-### Format string
-
-The `format` positional argument is interpreted as $\LaTeX$ code, but with the
-extra that format specifiers of `@printf` (or the `printf` function in the
-C language) are allowed inside.
-
-The argument `format` can also be a `LaTeXString`, from
-[LaTeXStrings.jl](https://github.com/stevengj/LaTeXStrings.jl). Interpolation
-from `LaTeXString` will have precedence over substitution of variables. That
-is, if `%$expr` appears in a `LaTeXString` passed to `stexprintf`, `expr` will
-be interpolated into the string before being passed as argument.
 
 **Note**
 :   Newline character is not supported by libtexprintf. If you use it, it will not work or
@@ -68,29 +55,30 @@ julia> using LibTeXPrintf
 
 julia> using LaTeXStrings
 
-julia> stexprintf("\\frac{1}{%d}", 2)
+julia> texstring("\\frac{1}{2}")
 "1\n─\n2"
 
-julia> texprintf("\\sum_{i=0}^{10}{%c}^2", 'i')
+julia> texprintln("\\sum_{i=0}^{10}{i}^2")
 10
 ⎯⎯
 ╲   2
 ╱  i
 ⎺⎺
 i=0
+
 julia> texgetfont()
 "text"
 
 julia> texsetfont!("mathbb")
 "mathbb"
 
-julia> texprintf("This is a LaTeX string.")
+julia> texprintln("This is a LaTeX string.")
 𝕋𝕙𝕚𝕤 𝕚𝕤 𝕒 𝕃𝕒𝕋𝕖𝕏 𝕤𝕥𝕣𝕚𝕟𝕘.
 
 julia> texsetfont!("text")
 "text"
 
-julia> stexprintf("This is a LaTeX string.")
+julia> texprint("This is a LaTeX string.")
 "This is a LaTeX string."
 ```
 

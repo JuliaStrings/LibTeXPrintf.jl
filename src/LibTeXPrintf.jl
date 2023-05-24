@@ -1,70 +1,62 @@
 module LibTeXPrintf
 
 using Base: ImmutableDict
-using Printf: Format, format
-using LaTeXStrings
 
 include("wrapper.jl")
 using .libtexprintf
 
-include("capture.jl")
-
-
-export stexprintf, texprintf, texsymbols, texfonts, texsetfont!, texgetfont, texsetascii, texsetunicode
-
-function __init__()
-    texsetfont!("text")
-    TEXSYMBOLS[] = ImmutableDict([
-        if length(line) == 4
-            String(line[2] * line[3]) => String(line[4])
-        else
-            String(line[2]) => String(line[3])
-        end for line in split.(split(strip(capture_out() do
-                    libtexprintf.texlistsymbols()
-                    # this is a workaround so `stdout` can work correctly and be captured by
-                    # Suppressor, this work by forcing a fflush on Libc using texerrors()
-                    libtexprintf.texerrors()
-                end, '\n'), '\n'))
-    ]...)
-end
+export texstring, texprint, texprintln, texsymbols, texfonts, texsetfont!, texgetfont, texsetascii, texsetunicode
 
 # set line width
 texsetlw!(lw) = libtexprintf.TEXPRINTF_LW[] = lw
 
+function _texsymbols()
+    i = 1
+    symbols = Vector{Pair{String,Char}}()
+    table = LibTeXPrintf.libtexprintf.TEXPRINTF_SYMBOLS[]
+    sym = unsafe_load(table, i)
+    while sym.name != C_NULL
+        push!(symbols, unsafe_string(sym.name) => Char(sym.unicode))
+        sym = unsafe_load(table, i)
+        i += 1
+    end
+    return symbols
+end
+
 """
-    TEXSYMBOLS::Ref{ImmutableDict{String, String}}
+    TEXSYMBOLS::ImmutableDict{String, Char}
 
 Dictionary with all the symbols that the library supports.
 """
-const TEXSYMBOLS = Ref{ImmutableDict{String,String}}()
+const TEXSYMBOLS = ImmutableDict(_texsymbols()...)
 
 """
     texsymbols()
 
 Returns an immutable dictionary with all the LaTeX symbols that the library supports.
 """
-texsymbols() = TEXSYMBOLS[]
+texsymbols() = TEXSYMBOLS
 
 """
-    TEXFONTS::Vector{String}
+    TEXFONTS::NTuple{String}
 
-Dictionary with all the symbols that the library supports.
+Tuple with all the font types that the library supports.
 """
-const TEXFONTS = sort!([
-    "mathsfbfit",
-    "mathsfbf",
-    "mathfrak",
-    "mathbfit",
-    "mathsfit",
-    "mathcal",
-    "mathscr",
-    "mathbf",
+const TEXFONTS = (
     "mathbb",
-    "mathsf",
-    "mathtt",
+    "mathbf",
+    "mathbfit",
+    "mathcal",
+    "mathfrak",
     "mathnormal",
+    "mathscr",
+    "mathsf",
+    "mathsfbf",
+    "mathsfbfit",
+    "mathsfit",
+    "mathtt",
     "text",
-])
+)
 
 """
     texfonts()
@@ -76,20 +68,7 @@ See also [`texsetfont!`](@ref), [`texgetfont`](@ref).
 # Examples
 ```jldoctest
 julia> texfonts()
-13-element Vector{String}:
- "mathbb"
- "mathbf"
- "mathbfit"
- "mathcal"
- "mathfrak"
- "mathnormal"
- "mathscr"
- "mathsf"
- "mathsfbf"
- "mathsfbfit"
- "mathsfit"
- "mathtt"
- "text"
+("mathbb", "mathbf", "mathbfit", "mathcal", "mathfrak", "mathnormal", "mathscr", "mathsf", "mathsfbf", "mathsfbfit", "mathsfit", "mathtt", "text")
 ```
 """
 texfonts() = TEXFONTS
@@ -130,12 +109,12 @@ julia> try
            println(e)
        end
 true
-ArgumentError("\"not_a_font\" not in [\"mathbb\", \"mathbf\", \"mathbfit\", \"mathcal\", \"mathfrak\", \"mathnormal\", \"mathscr\", \"mathsf\", \"mathsfbf\", \"mathsfbfit\", \"mathsfit\", \"mathtt\", \"text\"]")
+ArgumentError("\"not_a_font\" not in (\"mathbb\", \"mathbf\", \"mathbfit\", \"mathcal\", \"mathfrak\", \"mathnormal\", \"mathscr\", \"mathsf\", \"mathsfbf\", \"mathsfbfit\", \"mathsfit\", \"mathtt\", \"text\")")
 ```
 """
 function texsetfont!(font::String)
-    idx = searchsorted(TEXFONTS, font)
-    if isempty(idx)
+    idx = findfirst(==(font), TEXFONTS)
+    if isnothing(idx)
         throw(ArgumentError("\"$font\" not in $(TEXFONTS)"))
     end
     libtexprintf.TEXPRINTF_FONT[] = pointer(TEXFONTS[first(idx)])
@@ -193,131 +172,32 @@ julia> LibTeXPrintf.texerrors() # queue cleaned
 ```
 """
 function texerrors()
-    error = capture_err() do
-        libtexprintf.texerrors()
+    c_str = libtexprintf.texerrors_str()
+    if c_str == C_NULL
+        throw(ArgumentError("Returned Cstring pointer is C_NULL"))
     end
-    if iszero(length(error))
-        return ""
-    end
-    return error[8:end-1]
+    errors = unsafe_string(c_str)
+    libtexprintf.texfree(c_str)
+    return errors
 end
 
-
 @doc raw"""
-    stexprintf(format::String, args...; [lw=0])
-    stexprintf(format::LaTeXString, args...; [lw=0])
-
-Write in a string rendered LaTeX from `format`, and format `args` values using the same
-format specifiers as macro `@printf` (or the `printf` function from the C language). The
-keywork `lw` determines the linewidth used to render the text boxes, a linewidth of 0 means
-no linewidth limit.
-
-If `format isa LaTeXString`, then it only is passed as `format.s`.
-
-Returns a `String` that when displayed shows as rendered LaTeX.
-
-!!! note
-    Newline character is not supported by libtexprintf. You can insert a line jump with
-    `\\`, as in LaTeX. If you use `'\n'`, it will not work or errors will appear.
-
-# Examples
-```jldoctest
-julia> out = stexprintf("\\frac{1}{%d}", 2)
-"1\n─\n2"
-
-julia> println(out)
-1
-─
-2
-
-julia> out = stexprintf("\\sum_{i=0}^{10}{%c}^2", 'i')
-"10\n⎯⎯\n╲   2\n╱  i\n⎺⎺\ni=0"
-
-julia> println(out)
-10
-⎯⎯
-╲   2
-╱  i
-⎺⎺
-i=0
-
-julia> using LaTeXStrings
-
-julia> out = stexprintf(L"\sum_{i=0}^{10}{%c}^2", 'i')
-" 10\n ⎯⎯\n ╲   2\n\$╱  i \$\n ⎺⎺\n i=0"
-
-julia> println(out)
- 10
- ⎯⎯
- ╲   2
-$╱  i $
- ⎺⎺
- i=0
-
-```
-"""
-stexprintf(fmt::String, args...; lw=0, #= debug =# fail=true) = stexprint(format(Format(fmt), args...); lw, fail)
-stexprintf(fmt::LaTeXString, args...; lw=0, #= debug =# fail=true) = stexprint(format(Format(fmt.s), args...); lw, fail)
-
-@doc raw"""
-    texprintf([io=stdout], fmt::String, args...; [lw=displaysize(io)[2]])
-    texprintf([io=stdout], fmt::LaTeXString, args...; [lw=displaysize(io)[2]])
-
-Write to `io` rendered LaTeX from `format`, and format `args` values using the same
-format specifiers as macro `@printf` (or the `printf` function from the C language). The
-keywork `lw` determines the linewidth used to render the text boxes, a linewidth of 0 means
-no linewidth limit.
-
-If `format isa LaTeXString`, then it only is passed as `format.s`.
-
-!!! note
-    Newline character is not supported by libtexprintf. You can insert a line jump with
-    `\\`, as in LaTeX. If you use `'\n'`, it will not work or errors will appear.
-
-# Examples
-```jldoctest
-julia> texprintf("\\frac{1}{%d}", 2)
-1
-─
-2
-
-julia> texprintf("\\sum_{i=0}^{10}{%c}^2", 'i')
-10
-⎯⎯
-╲   2
-╱  i
-⎺⎺
-i=0
-
-julia> using LaTeXStrings
-
-julia> texprintf(L"\sum_{i=0}^{10}{%c}^2", 'i')
- 10
- ⎯⎯
- ╲   2
-$╱  i $
- ⎺⎺
- i=0
-```
-"""
-texprintf(fmt, args...; lw=-1) = print(stdout, stexprintf(fmt, args...; lw=(lw < 0 ? displaysize(stdout)[2] : lw)))
-texprintf(io::IO, fmt, args...; lw=-1) = print(io, stexprintf(fmt, args...; lw=(lw < 0 ? displaysize(io)[2] : lw)))
-
-@doc raw"""
-   stexprint(str::String; [lw=0], [fail=true], [escape=true])
+   texstring(str::String; [lw=0], [fail=true])
 
 Write in a string rendered LaTeX from `str`. The keywork `lw` determines the linewidth used
 to render the text boxes, a linewidth of 0 means no linewidth limit.
 
 Returns a `String` that when displayed shows as rendered LaTeX.
 
+See also [`texprint`](@ref), [`texprintln`](@ref).
+
 !!! note
     Newline character is not supported by libtexprintf. You can insert a line jump with
     `\\`, as in LaTeX. If you use `'\n'`, it will not work or errors will appear.
 
 # Examples
 ```jldoctest
-julia> out = stexprint("\\frac{1}{%d}", 2)
+julia> out = texstring("\\frac{1}{2}")
 "1\n─\n2"
 
 julia> println(out)
@@ -325,15 +205,14 @@ julia> println(out)
 ─
 2
 
-julia> println(stexprint("tiny cute box for me"; lw=10))
+julia> println(texstring("tiny cute box for me"; lw=10))
 tiny cute
 box for me
 ```
 """
-function stexprint(tex::String; lw=0, #= debug =# fail=true, escape=true)
-    esctex = escape ? replace(tex, '%' => "{\\%%}") : tex # escape '%' for C-printf style format and latex
+function texstring(tex::String; lw=0, #= debug =# fail=true)
     texsetlw!(lw) # set the linewidth for rendering
-    c_str = libtexprintf.stexprintf(esctex) # can be C_NULL
+    c_str = libtexprintf.texstring(tex) # can be C_NULL
     if c_str == C_NULL
         throw(ArgumentError("Returned Cstring pointer is C_NULL"))
     end
@@ -349,5 +228,55 @@ function stexprint(tex::String; lw=0, #= debug =# fail=true, escape=true)
     end
     render
 end
+
+@doc raw"""
+   texprint([io::IO=stdout], str::String; [lw=0], [fail=true])
+
+Printf to `io` a string rendered LaTeX from `str` without trailing newline. The keywork `lw`
+determines the linewidth used to render the text boxes, a linewidth of 0 means no linewidth
+limit.
+
+See also [`texstring`](@ref), [`texprintln`](@ref).
+
+!!! note
+    Newline character is not supported by libtexprintf. You can insert a line jump with
+    `\\`, as in LaTeX. If you use `'\n'`, it will not work or errors will appear.
+
+# Examples
+```jldoctest
+julia> texprint("\\frac{1}{2}")
+1
+─
+2
+julia> texprint(texstring("tiny cute box for me"; lw=10))
+tiny cute
+box for me
+```
+"""
+texprint(tex::String; lw=0, #= debug =# fail=true) = texprint(stdout, tex; lw, fail)
+texprint(io::IO, tex::String; lw=0, #= debug =# fail=true) = print(io, texstring(tex; lw, fail))
+
+@doc raw"""
+   texprintln([io::IO=stdout], str::String; [lw=0], [fail=true])
+
+Same as [texprint](@ref) with a trailing newline.
+
+See also [`texstring`](@ref), [`texprint`](@ref).
+
+# Examples
+```jldoctest
+julia> texprintln("\\frac{1}{2}")
+1
+─
+2
+
+julia> texprintln(texstring("tiny cute box for me"; lw=10))
+tiny cute
+box for me
+
+```
+"""
+texprintln(tex::String; lw=0, #= debug =# fail=true) = texprintln(stdout, tex; lw, fail)
+texprintln(io::IO, tex::String; lw=0, #= debug =# fail=true) = println(io, texstring(tex; lw, fail))
 
 end

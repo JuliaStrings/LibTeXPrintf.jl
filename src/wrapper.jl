@@ -2,6 +2,10 @@ module libtexprintf
 
 import LibTeXPrintf_jll
 
+mutable struct TeXSymbol
+    name::Cstring
+    unicode::Clong
+end
 
 mutable struct Global{T}
     x::Ptr{T}
@@ -20,18 +24,20 @@ end
     unsafe_store!(g.x, v)
 end
 
-const TEXPRINTF_LW = Global{Cint}()
-const TEXPRINTF_FONT = Global{Cstring}()
-const TEXPRINTF_FCW = Global{Cint}()
-const TEXPRINTF_WCW = Global{Cint}()
-const TEXPRINTF_ERR = Global{Cint}()
-
 macro load!(symbol)
     :(
         $symbol.x = Core.Intrinsics.cglobal(($(esc(QuoteNode(symbol))), $(QuoteNode(LibTeXPrintf_jll.libtexprintf))), eltype($symbol));
         $symbol
     )
 end
+
+const TEXPRINTF_SYMBOLS = Global{Ptr{TeXSymbol}}()
+@load! TEXPRINTF_SYMBOLS
+const TEXPRINTF_LW = Global{Cint}()
+const TEXPRINTF_FONT = Global{Cstring}()
+const TEXPRINTF_FCW = Global{Cint}()
+const TEXPRINTF_WCW = Global{Cint}()
+const TEXPRINTF_ERR = Global{Cint}()
 
 function __init__()
     @load! TEXPRINTF_LW
@@ -43,7 +49,8 @@ end
 
 # *name*          : *signature (type(type1,type2,...))*   -> *side effect*                        |
 # ----------------+---------------------------------------++--------------------------------------+
-# texprintf       : int(const char *format, ...)          -> c_stdout // (ignored)                |
+# texstring       : char*(const char *tex)                -> memory associated to output (char*)  +-->+
+# texprintf       : int(const char *format, ...)          -> c_stdout // (ignored)                |   |
 # stexprintf      : char*(const char *format, ...)        -> memory associated to output (char*)  +-->+
 # ftexprintf      : int(FILE *f, const char *format, ...) -> f        // (ignored)                |   |
 # texboxtree      : void(const char *format, ...)         -> c_stdout // for debugging            |   |
@@ -53,15 +60,9 @@ end
 # SetStyleASCII   : void()                                -> STYLE_UNI // Not exported global     |
 # SetStyleUNICODE : void()                                -> STYLE_ASC // Not exported global     |
 
-# we ignore the fact that it can be formated with C style format specifiers, as we only pass
-# "%"-escaped strings that will not need vararg
-stexprintf(str) = @ccall LibTeXPrintf_jll.libtexprintf.stexprintf(str::Cstring)::Cstring
+texstring(str) = @ccall LibTeXPrintf_jll.libtexprintf.texstring(str::Cstring)::Cstring
 
-# we will capture stdout later
-texlistsymbols() = @ccall LibTeXPrintf_jll.libtexprintf.texlistsymbols()::Cvoid
-
-# we will capture stderr later
-texerrors() = @ccall LibTeXPrintf_jll.libtexprintf.texerrors()::Cvoid
+texerrors_str() = @ccall LibTeXPrintf_jll.libtexprintf.texerrors_str()::Cstring
 
 texfree(ptr) = @ccall LibTeXPrintf_jll.libtexprintf.texfree(convert(Ptr{Cvoid}, ptr)::Ptr{Cvoid})::Cvoid
 
