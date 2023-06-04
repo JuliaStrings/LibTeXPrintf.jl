@@ -189,7 +189,7 @@ function texerrors()
 end
 
 @doc raw"""
-   texstring(str::String; [lw=0], [fail=true])
+   texstring(str::AbstractString; [lw=0], [fail=true])
 
 Write in a string rendered LaTeX from `str`. The keywork `lw` determines the linewidth used
 to render the text boxes, a linewidth of 0 means no linewidth limit.
@@ -217,7 +217,7 @@ tiny cute
 box for me
 ```
 """
-function texstring(tex::String; lw=0, #= debug =# fail=true)
+function texstring(tex::AbstractString; lw=0, #= debug =# fail=true)
     texsetlw!(lw) # set the linewidth for rendering
     c_str = libtexprintf.texstring(tex) # can be C_NULL
     if c_str == C_NULL
@@ -237,7 +237,7 @@ function texstring(tex::String; lw=0, #= debug =# fail=true)
 end
 
 @doc raw"""
-   texprint([io::IO=stdout], str::String; [lw=0], [fail=true])
+   texprint([io::IO=stdout], str::AbstractString; [lw=0], [fail=true])
 
 Printf to `io` a string rendered LaTeX from `str` without trailing newline. The keywork `lw`
 determines the linewidth used to render the text boxes, a linewidth of 0 means no linewidth
@@ -260,11 +260,11 @@ tiny cute
 box for me
 ```
 """
-texprint(tex::String; lw=0, #= debug =# fail=true) = texprint(stdout, tex; lw, fail)
-texprint(io::IO, tex::String; lw=0, #= debug =# fail=true) = print(io, texstring(tex; lw, fail))
+texprint(tex::AbstractString; lw=0, #= debug =# fail=true) = texprint(stdout, tex; lw, fail)
+texprint(io::IO, tex::AbstractString; lw=0, #= debug =# fail=true) = print(io, texstring(tex; lw, fail))
 
 @doc raw"""
-   texprintln([io::IO=stdout], str::String; [lw=0], [fail=true])
+   texprintln([io::IO=stdout], str::AbstractString; [lw=0], [fail=true])
 
 Same as [texprint](@ref) with a trailing newline.
 
@@ -283,7 +283,7 @@ box for me
 
 ```
 """
-texprintln(tex::String; lw=0, #= debug =# fail=true) = texprintln(stdout, tex; lw, fail)
-texprintln(io::IO, tex::String; lw=0, #= debug =# fail=true) = println(io, texstring(tex; lw, fail))
+texprintln(tex::AbstractString; lw=0, #= debug =# fail=true) = texprintln(stdout, tex; lw, fail)
+texprintln(io::IO, tex::AbstractString; lw=0, #= debug =# fail=true) = println(io, texstring(tex; lw, fail))
 
 end
