@@ -47,18 +47,19 @@ function __init__()
     @load! TEXPRINTF_ERR
 end
 
-# *name*          : *signature (type(type1,type2,...))*   -> *side effect*                        |
-# ----------------+---------------------------------------++--------------------------------------+
-# texstring       : char*(const char *tex)                -> memory associated to output (char*)  +-->+
-# texprintf       : int(const char *format, ...)          -> c_stdout // (ignored)                |   |
-# stexprintf      : char*(const char *format, ...)        -> memory associated to output (char*)  +-->+
-# ftexprintf      : int(FILE *f, const char *format, ...) -> f        // (ignored)                |   |
-# texboxtree      : void(const char *format, ...)         -> c_stdout // for debugging            |   |
-# texlistsymbols  : void()                                -> c_stdout // called from __init__     |   |
-# texerrors       : void()                                -> c_stderr // does a fflush!           |   v
-# texfree         : void(void *ptr)                       -> ptr-associated memory  // to release +<--+
-# SetStyleASCII   : void()                                -> STYLE_UNI // Not exported global     |
-# SetStyleUNICODE : void()                                -> STYLE_ASC // Not exported global     |
+# *name*            : *signature (type(type1,type2,...))*   -> *side effect*                        |
+# ------------------+---------------------------------------++--------------------------------------+
+# texstring         : char*(const char *tex)                -> memory associated to output (char*)  +-->+
+# texprintf         : int(const char *format, ...)          -> c_stdout // (ignored)                |   |
+# stexprintf        : char*(const char *format, ...)        -> memory associated to output (char*)  +-->+
+# ftexprintf        : int(FILE *f, const char *format, ...) -> f        // (ignored)                |   |
+# texboxtree        : void(const char *format, ...)         -> c_stdout // for debugging            |   |
+# texlistsymbols    : void()                                -> c_stdout // called from __init__     |   |
+# texerrors         : void()                                -> c_stderr // does a fflush!           |   v
+# texfree           : void(void *ptr)                       -> ptr-associated memory  // to release +<--+
+# SetStyleASCII     : void()                                -> style // Not exported global         |
+# SetStyleUNICODE   : void()                                -> style // Not exported global         |
+# ToggleMapSuperSub : void()                                -> style // Not exported global         |
 
 texstring(str) = @ccall LibTeXPrintf_jll.libtexprintf.texstring(str::Cstring)::Cstring
 
@@ -69,5 +70,7 @@ texfree(ptr) = @ccall LibTeXPrintf_jll.libtexprintf.texfree(convert(Ptr{Cvoid}, 
 SetStyleASCII() = @ccall LibTeXPrintf_jll.libtexprintf.SetStyleUNICODE()::Cvoid
 
 SetStyleUNICODE() = @ccall LibTeXPrintf_jll.libtexprintf.SetStyleUNICODE()::Cvoid
+
+ToggleMapSuperSub() = @ccall LibTeXPrintf_jll.libtexprintf.ToggleMapSuperSub()::Cvoid
 
 end

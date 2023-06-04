@@ -5,7 +5,8 @@ using Base: ImmutableDict
 include("wrapper.jl")
 using .libtexprintf
 
-export texstring, texprint, texprintln, texsymbols, texfonts, texsetfont!, texgetfont, texsetascii, texsetunicode
+export texstring, texprint, texprintln, texsymbols, texfonts, texsetfont!, texgetfont,
+    texsetascii, texsetunicode, textogglesupersub
 
 # set line width
 texsetlw!(lw) = libtexprintf.TEXPRINTF_LW[] = lw
@@ -147,6 +148,12 @@ texgetfont() = unsafe_string(libtexprintf.TEXPRINTF_FONT[])
 texsetascii() = libtexprintf.SetStyleASCII()
 
 texsetunicode() = libtexprintf.SetStyleUNICODE()
+
+const MAPSUPERSUB = Ref(true)
+function textogglesupersub()
+    libtexprintf.ToggleMapSuperSub()
+    MAPSUPERSUB[] = ~MAPSUPERSUB[];
+end
 
 @doc raw"""
     texerrors()

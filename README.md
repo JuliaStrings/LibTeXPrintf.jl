@@ -39,6 +39,7 @@ texprintln(tex::String; [lw])::String
 
 texsetascii()
 texsetunicode()
+textogglesupersub()
 ```
 
 The documentation of every one of these can be consulted in help mode in the
