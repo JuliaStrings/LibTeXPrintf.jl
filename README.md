@@ -23,45 +23,31 @@ julia> Pkg.add("LibTeXPrintf")
 
 # Documentation
 
-LibTeXPrintf.jl export six three functions
+LibTeXPrintf.jl export nine functions
 
 ```julia
-texfonts()::NTuple(N, String)
+texfonts()::Vector{String}
 texgetfont()::String
-texsetfont(font::String)::String
+texsetfont!(font::String)::String # modifies global state, doesn't modify its argument
 
 texsymbols()::ImmutableDict{String, String}
 
-stexprintf(format::String, args...)::String
-stexprintf(format::LaTeXString, args...; clean=true)::String
+texstring(tex::String; [lw])::String
 
-texprintf([io::IO], format::String, args...)
-texprintf([io::IO], format::LaTeXString, args...; clean=true)
+texprint(tex::String; [lw])::String
+texprintln(tex::String; [lw])::String
+
+texsetascii()
+texsetunicode()
+textogglesupersub()
 ```
 
 The documentation of every one of these can be consulted in help mode in the
 REPL (press `?` to change to help mode, `backspace` to exit).
 
-### Format string
-
-The `format` positional argument is interpreted as $\LaTeX$ code, but with the
-extra that format specifiers of `@printf` (or the `printf` function in the
-C language) are allowed inside.
-
-The argument `format` can also be a `LaTeXString`, from
-[LaTeXStrings.jl](https://github.com/stevengj/LaTeXStrings.jl), in which case
-the keyword argument `clean` is present (and defaults to `true`). When
-`clean=true`, then format is changed into `strip(format, '$')`.
-
 **Note**
-:   If you try to print a new line character in (`'\n'`) inside a
-    `LaTeXString`, it will error saying `ERROR: ArgumentError: Unknown command
-    (1x)`. This is because LaTeXStrings.jl escapes the string from `"\n"` to
-    `"\\n"` and when libtexprintf sees it, it looks like a LaTeX command, just
-    not one that it knows about.
-
-    There is also the problem that libtexprintf will actually just **ignore**
-    all the new line characters (`'\n'`).
+:   Newline character is not supported by libtexprintf. If you use it, it will not work or
+    errors will appear.
 
 ## Examples
 
@@ -70,12 +56,10 @@ julia> using LibTeXPrintf
 
 julia> using LaTeXStrings
 
-julia> texprintf("\\\\frac{1}{%d}", 2)
-1
-─
-2
+julia> texstring("\\frac{1}{2}")
+"1\n─\n2"
 
-julia> texprintf("\\\\sum_{i=0}^{10}{%c}^2", 'i')
+julia> texprintln("\\sum_{i=0}^{10}{i}^2")
 10
 ⎯⎯
 ╲   2
@@ -83,16 +67,19 @@ julia> texprintf("\\\\sum_{i=0}^{10}{%c}^2", 'i')
 ⎺⎺
 i=0
 
-julia> texsetfont("mathbb")
-"mathbb"
-
-julia> texprintf("This is a LaTeX string.")
-𝕋𝕙𝕚𝕤 𝕚𝕤 𝕒 𝕃𝕒𝕋𝕖𝕏 𝕤𝕥𝕣𝕚𝕟𝕘.
-
-julia> texsetfont("text")
+julia> texgetfont()
 "text"
 
-julia> texprintf("This is a LaTeX string.")
+julia> texsetfont!("mathbb")
+"mathbb"
+
+julia> texprintln("This is a LaTeX string.")
+𝕋𝕙𝕚𝕤 𝕚𝕤 𝕒 𝕃𝕒𝕋𝕖𝕏 𝕤𝕥𝕣𝕚𝕟𝕘.
+
+julia> texsetfont!("text")
+"text"
+
+julia> texprint("This is a LaTeX string.")
 "This is a LaTeX string."
 ```
 

@@ -4,14 +4,9 @@ authors = ["José Joaquín Zubieta Rico <jose.zubieta@cimat.mx>"]
 version = "0.1.0"
 
 [deps]
-CBinding = "d43a6710-96b8-4a2d-833c-c424785e5374"
-LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LibTeXPrintf_jll = "31c4d84e-4279-5ed4-9345-4512eef47f95"
-Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
-CBinding = "1"
-LaTeXStrings = "1"
 LibTeXPrintf_jll = "1"
 julia = "1.6"
 
